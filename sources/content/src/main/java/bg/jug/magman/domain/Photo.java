@@ -15,12 +15,15 @@
  */
 package bg.jug.magman.domain;
 
+import javax.json.*;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-public class Photo {
+public class Photo implements Jsonable {
 
     private Long id;
     private byte[] photo;
@@ -98,5 +101,31 @@ public class Photo {
                 "author='" + author + '\'' +
                 ", tags=" + tags +
                 '}';
+    }
+
+    public static Photo fromJson(String jsonString) {
+        JsonReader reader = Json.createReader(new StringReader(jsonString));
+        JsonObject jsonObject = reader.readObject();
+
+        Photo photo = new Photo();
+        photo.id = jsonObject.getJsonNumber("id").longValue();
+        photo.author = jsonObject.getString("author");
+        // TODO byte array
+        photo.tags = jsonObject.getJsonArray("tags").stream()
+                .map(jsonValue -> ((JsonString) jsonValue).getString())
+                .collect(Collectors.toList());
+
+        return photo;
+    }
+
+    public JsonObject toJson() {
+        JsonObjectBuilder articleJson = Json.createObjectBuilder();
+        articleJson.add("id", id);
+        articleJson.add("author", author);
+        // TODO byte array
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        tags.forEach(arrayBuilder::add);
+        articleJson.add("tags", arrayBuilder.build());
+        return articleJson.build();
     }
 }
