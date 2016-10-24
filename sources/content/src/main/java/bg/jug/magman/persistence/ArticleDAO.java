@@ -31,6 +31,7 @@ public class ArticleDAO {
     private AtomicLong sequence = new AtomicLong(0);
 
     private Map<Long, Article> articles = new ConcurrentHashMap<>();
+    private Map<Long, Comment> comments = new ConcurrentHashMap<>();
 
     public Article addArticle(Article article) {
         Long articleId = sequence.incrementAndGet();
@@ -43,6 +44,7 @@ public class ArticleDAO {
         article.getComments().stream()
                 .filter(comment -> comment.getId() == null)
                 .forEach(comment -> comment.setId(sequence.incrementAndGet()));
+        article.getComments().forEach(comment -> comments.put(comment.getId(), comment));
 
         articles.put(articleId, article);
 
@@ -82,15 +84,30 @@ public class ArticleDAO {
         if (article != null) {
             article.getComments().add(comment);
         }
+        comments.put(comment.getId(), comment);
 
         return comment;
     }
 
-//    public void updateComment(Comment comment) {
-//        articles.values().stream()
-//                .flatMap(article -> article.getComments().stream())
-//                .filter(articleComment -> articleComment.getId().equals(comment.getId()))
-//                .findFirst()
-//                .ifPresent();
-//    }
+    public Comment updateComment(Comment comment) {
+        if (comment.getId() != null) {
+            comments.put(comment.getId(), comment);
+        }
+        return comment;
+    }
+
+    public void deleteComment(Long commentId) {
+        Comment commentToRemove = comments.get(commentId);
+        if (commentToRemove != null) {
+            comments.remove(commentId);
+            articles.values().stream()
+                    .filter(article -> articleContainsComment(article, commentId))
+                    .findFirst()
+                    .ifPresent(article -> article.getComments().remove(commentToRemove));
+        }
+    }
+
+    private boolean articleContainsComment(Article article, Long commentId) {
+        return article.getComments().stream().anyMatch(comment -> comment.getId().equals(commentId));
+    }
 }

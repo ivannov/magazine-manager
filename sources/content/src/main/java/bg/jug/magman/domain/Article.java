@@ -15,11 +15,14 @@
  */
 package bg.jug.magman.domain;
 
+import javax.json.*;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-public class Article {
+public class Article implements Jsonable {
 
     private Long id;
     private String title;
@@ -122,5 +125,42 @@ public class Article {
                 ", photos=" + photos +
                 ", comments=" + comments +
                 '}';
+    }
+
+    public static Article fromJson(String jsonString) {
+        JsonReader reader = Json.createReader(new StringReader(jsonString));
+        JsonObject jsonObject = reader.readObject();
+
+        Article article = new Article();
+        article.id = jsonObject.getJsonNumber("id").longValue();
+        article.title = jsonObject.getString("title");
+        article.content = jsonObject.getString("content");
+        article.author = jsonObject.getString("author");
+        article.photos = jsonObject.getJsonArray("photos").stream()
+                .map(jsonValue -> Photo.fromJson(jsonValue.toString()))
+                .collect(Collectors.toList());
+        article.comments = jsonObject.getJsonArray("comments").stream()
+                .map(jsonValue -> Comment.fromJson(jsonValue.toString()))
+                .collect(Collectors.toList());
+
+        return article;
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        builder.add("id", id);
+        builder.add("title", title);
+        builder.add("content", content);
+        builder.add("author", author);
+        builder.add("photos", getArray(photos));
+        builder.add("comments", getArray(comments));
+        return builder.build();
+    }
+
+    private <T extends Jsonable> JsonArray getArray(List<T> arrayData) {
+        JsonArrayBuilder builder = Json.createArrayBuilder();
+        arrayData.forEach(photo -> builder.add(photo.toJson().toString()));
+        return builder.build();
     }
 }
