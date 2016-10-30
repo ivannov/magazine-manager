@@ -37,15 +37,21 @@ public class ArticleDAO {
         Long articleId = sequence.incrementAndGet();
         article.setId(articleId);
 
-        article.getPhotos().stream()
-                            .filter(photo -> photo.getId() == null)
-                            .forEach(photo -> photo.setId(sequence.incrementAndGet()));
+        List<Photo> photos = article.getPhotos();
+        if (photos != null) {
+            photos.stream()
+                .filter(photo -> photo.getId() == null)
+                .forEach(photo -> photo.setId(sequence.incrementAndGet()));
 
-        article.getComments().stream()
-                .filter(comment -> comment.getId() == null)
-                .forEach(comment -> comment.setId(sequence.incrementAndGet()));
-        article.getComments().forEach(comment -> comments.put(comment.getId(), comment));
+        }
 
+        List<Comment> comments = article.getComments();
+        if (comments != null) {
+            comments.stream()
+                    .filter(comment -> comment.getId() == null)
+                    .forEach(comment -> comment.setId(sequence.incrementAndGet()));
+            comments.forEach(comment -> this.comments.put(comment.getId(), comment));
+        }
         articles.put(articleId, article);
 
         return article;

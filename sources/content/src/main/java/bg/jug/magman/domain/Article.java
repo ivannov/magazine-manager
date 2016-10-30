@@ -28,8 +28,8 @@ public class Article implements Jsonable {
     private String title;
     private String content;
     private String author;
-    private List<Photo> photos;
-    private List<Comment> comments;
+    private List<Photo> photos = new ArrayList<>();
+    private List<Comment> comments = new ArrayList<>();
 
     public Article() {
     }
@@ -132,16 +132,25 @@ public class Article implements Jsonable {
         JsonObject jsonObject = reader.readObject();
 
         Article article = new Article();
-        article.id = jsonObject.getJsonNumber("id").longValue();
+        JsonNumber jsonId = jsonObject.getJsonNumber("id");
+        if (jsonId != null) {
+            article.id = jsonId.longValue();
+        }
         article.title = jsonObject.getString("title");
         article.content = jsonObject.getString("content");
         article.author = jsonObject.getString("author");
-        article.photos = jsonObject.getJsonArray("photos").stream()
-                .map(jsonValue -> Photo.fromJson(jsonValue.toString()))
-                .collect(Collectors.toList());
-        article.comments = jsonObject.getJsonArray("comments").stream()
-                .map(jsonValue -> Comment.fromJson(jsonValue.toString()))
-                .collect(Collectors.toList());
+        JsonArray jsonPhotos = jsonObject.getJsonArray("photos");
+        if (jsonPhotos != null) {
+            article.photos = jsonPhotos.stream()
+                    .map(jsonValue -> Photo.fromJson(jsonValue.toString()))
+                    .collect(Collectors.toList());
+        }
+        JsonArray jsonComments = jsonObject.getJsonArray("comments");
+        if (jsonComments != null) {
+            article.comments = jsonComments.stream()
+                    .map(jsonValue -> Comment.fromJson(jsonValue.toString()))
+                    .collect(Collectors.toList());
+        }
 
         return article;
     }
@@ -153,14 +162,16 @@ public class Article implements Jsonable {
         builder.add("title", title);
         builder.add("content", content);
         builder.add("author", author);
-        builder.add("photos", getArray(photos));
-        builder.add("comments", getArray(comments));
+        if (photos != null)
+            builder.add("photos", getArray(photos));
+        if (comments != null)
+            builder.add("comments", getArray(comments));
         return builder.build();
     }
 
     private <T extends Jsonable> JsonArray getArray(List<T> arrayData) {
         JsonArrayBuilder builder = Json.createArrayBuilder();
-        arrayData.forEach(photo -> builder.add(photo.toJson().toString()));
+        arrayData.forEach(element -> builder.add(element.toJson().toString()));
         return builder.build();
     }
 }

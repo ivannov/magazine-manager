@@ -53,7 +53,7 @@ public class ContentResource {
     }
 
     @GET
-    @Path("/{authorName}")
+    @Path("/author/{authorName}")
     public Response findArticlesByAuthor(@PathParam("authorName") String authorName) {
         List<Article> articles = articleDAO.findArticlesByAuthor(authorName);
         JsonArray articlesArray = buildArticlesJson(articles);

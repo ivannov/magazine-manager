@@ -15,10 +15,7 @@
  */
 package bg.jug.magman.domain;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonReader;
+import javax.json.*;
 import java.io.StringReader;
 import java.util.Objects;
 
@@ -92,7 +89,10 @@ public class Comment implements Jsonable {
         JsonObject jsonObject = reader.readObject();
 
         Comment comment = new Comment();
-        comment.id = jsonObject.getJsonNumber("id").longValue();
+        JsonNumber jsonId = jsonObject.getJsonNumber("id");
+        if (jsonId != null) {
+            comment.id = jsonId.longValue();
+        }
         comment.author = jsonObject.getString("author");
         comment.content = jsonObject.getString("content");
 
