@@ -16,13 +16,16 @@
 package bg.jug.magman.advertisers.resources;
 
 import bg.jug.magman.advertisers.dao.AdvertiserDAO;
+import bg.jug.magman.advertisers.domain.Advertiser;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 @Path("/")
 @Produces("application/json")
@@ -34,7 +37,14 @@ public class AdvertiserResource {
 
     @GET
     public Response getAdvertisers() {
-        advertiserDAO.getAdvertisers();
-        return null; // TODO
+        final List<Advertiser> advertisers = advertiserDAO.getAdvertisers();
+        GenericEntity<List<Advertiser>> advertisersGE = buildGenericEntity(advertisers);
+        return Response.ok(advertisersGE).build();
+    }
+
+
+
+    private GenericEntity<List<Advertiser>> buildGenericEntity(final List<Advertiser> advertisers) {
+        return new GenericEntity<List<Advertiser>>(advertisers) {};
     }
 }

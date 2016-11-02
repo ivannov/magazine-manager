@@ -16,9 +16,14 @@
 package bg.jug.magman.advertisers.domain;
 
 import javax.json.*;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.io.StringReader;
 import java.util.Objects;
 
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Advertiser {
     private Long id;
     private String name;
@@ -106,33 +111,5 @@ public class Advertiser {
                 ", contactEmail='" + contactEmail + '\'' +
                 ", sponsorPackage=" + sponsorPackage +
                 '}';
-    }
-
-    public static Advertiser fromJson(String advertiserJson) {
-        JsonReader reader = Json.createReader(new StringReader(advertiserJson));
-        JsonObject jsonObject = reader.readObject();
-
-        Advertiser advertiser = new Advertiser();
-        JsonNumber jsonId = jsonObject.getJsonNumber("id");
-        if (jsonId != null) {
-            advertiser.id = jsonId.longValue();
-        }
-
-        advertiser.name = jsonObject.getString("name");
-        advertiser.website = jsonObject.getString("website");
-        advertiser.contactEmail = jsonObject.getString("contactEmail");
-        advertiser.sponsorPackage = SponsorPackage.valueOf(jsonObject.getString("sponsorPackage"));
-
-        return advertiser;
-    }
-
-    public JsonObject toJson() {
-        JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
-        objectBuilder.add("id", id);
-        objectBuilder.add("name", name);
-        objectBuilder.add("website", website);
-        objectBuilder.add("contactEmail", contactEmail);
-        objectBuilder.add("sponsorPackage", sponsorPackage.toString());
-        return  objectBuilder.build();
     }
 }

@@ -15,9 +15,9 @@
  */
 package bg.jug.magman.advertisers.domain;
 
-import javax.json.JsonObject;
-import java.util.Objects;
+import javax.xml.bind.annotation.XmlEnum;
 
+@XmlEnum
 public enum SponsorPackage {
 
     GOLD(1000), SILVER(500), BRONZE(100);
