@@ -17,14 +17,14 @@ package bg.jug.magman.advertisers.resources;
 
 import bg.jug.magman.advertisers.dao.AdvertiserDAO;
 import bg.jug.magman.advertisers.domain.Advertiser;
+import bg.jug.magman.advertisers.rest.Application;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 import java.util.List;
 
 @Path("/")
@@ -42,7 +42,52 @@ public class AdvertiserResource {
         return Response.ok(advertisersGE).build();
     }
 
+    @GET
+    @Path("/{id}")
+    public Response findAdvertiserById(@PathParam("id") final Long id) {
+        return advertiserDAO.findAdvertiserById(id)
+                .map(advertiser -> Response.ok(advertiser).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
+    }
 
+    @GET
+    @Path("/name/{name}")
+    public Response findAdvertiserByName(@PathParam("name") final String name) {
+        return advertiserDAO.findAdvertiserByName(name)
+                .map(advertiser -> Response.ok(advertiser).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
+    }
+
+    @GET
+    @Path("/package/{identifier}")
+    public Response findAdvertisersByPackage(@PathParam("identifier") final String identifier) {
+        final List<Advertiser> advertisersByPackage = advertiserDAO.findAdvertisersByPackage(identifier);
+        final GenericEntity<List<Advertiser>> entity = buildGenericEntity(advertisersByPackage);
+        return Response.ok(entity).build();
+    }
+
+    @POST
+    @Consumes("application/json")
+    public Response addAdvertiser(final Advertiser advertiser) {
+        final Advertiser created = advertiserDAO.addAdvertiser(advertiser);
+        return Response.created(URI.create(Application.APPLICATION_PATH + "/" + created.getId()))
+                .entity(created)
+                .build();
+    }
+
+    @PUT
+    @Consumes("application/json")
+    public Response updateAdvertiser(final Advertiser advertiser) {
+        advertiserDAO.updateAdvertiser(advertiser);
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public Response remove(@PathParam("id") final Long advertiserId) {
+        advertiserDAO.deleteAdvertiser(advertiserId);
+        return Response.noContent().build();
+    }
 
     private GenericEntity<List<Advertiser>> buildGenericEntity(final List<Advertiser> advertisers) {
         return new GenericEntity<List<Advertiser>>(advertisers) {};

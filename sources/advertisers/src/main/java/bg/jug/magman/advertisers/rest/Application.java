@@ -17,6 +17,9 @@ package bg.jug.magman.advertisers.rest;
 
 import javax.ws.rs.ApplicationPath;
 
-@ApplicationPath("/advertiser")
+import static bg.jug.magman.advertisers.rest.Application.APPLICATION_PATH;
+
+@ApplicationPath(APPLICATION_PATH)
 public class Application extends javax.ws.rs.core.Application {
+    public static final String APPLICATION_PATH = "/advertiser";
 }
