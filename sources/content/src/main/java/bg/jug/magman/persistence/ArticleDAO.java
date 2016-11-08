@@ -116,4 +116,18 @@ public class ArticleDAO {
     private boolean articleContainsComment(Article article, Long commentId) {
         return article.getComments().stream().anyMatch(comment -> comment.getId().equals(commentId));
     }
+
+    public Photo addPhotoToArticle(Photo photo, Long articleId) {
+        photo.setId(sequence.incrementAndGet());
+        Article article = articles.get(articleId);
+        article.getPhotos().add(photo);
+        return photo;
+    }
+
+    public Optional<Photo> findPhotoById(Long photoId) {
+        return articles.values().stream()
+                .flatMap(article -> article.getPhotos().stream())
+                .filter(photo -> photo.getId().equals(photoId))
+                .findFirst();
+    }
 }

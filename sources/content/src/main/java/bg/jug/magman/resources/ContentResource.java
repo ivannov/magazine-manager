@@ -17,6 +17,8 @@ package bg.jug.magman.resources;
 
 import bg.jug.magman.domain.Article;
 import bg.jug.magman.domain.Comment;
+import bg.jug.magman.domain.Jsonable;
+import bg.jug.magman.domain.Photo;
 import bg.jug.magman.persistence.ArticleDAO;
 
 import javax.enterprise.context.RequestScoped;
@@ -24,13 +26,22 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.List;
 
 @Path("/")
-@Produces("application/json")
+@Produces(MediaType.APPLICATION_JSON)
 @RequestScoped
 public class ContentResource {
 
@@ -40,7 +51,7 @@ public class ContentResource {
     @GET
     public Response getArticles() {
         List<Article> articles = articleDAO.getAllArticles();
-        JsonArray articlesArray = buildArticlesJson(articles);
+        JsonArray articlesArray = buildJsonArray(articles);
         return Response.ok(articlesArray).build();
     }
 
@@ -56,15 +67,9 @@ public class ContentResource {
     @Path("/author/{authorName}")
     public Response findArticlesByAuthor(@PathParam("authorName") String authorName) {
         List<Article> articles = articleDAO.findArticlesByAuthor(authorName);
-        JsonArray articlesArray = buildArticlesJson(articles);
+        JsonArray articlesArray = buildJsonArray(articles);
         return Response.ok(articlesArray).build();
 
-    }
-
-    private JsonArray buildArticlesJson(List<Article> articles) {
-        JsonArrayBuilder articlesArrayBuilder = Json.createArrayBuilder();
-        articles.forEach(article -> articlesArrayBuilder.add(article.toJson()));
-        return articlesArrayBuilder.build();
     }
 
     @POST
@@ -78,7 +83,7 @@ public class ContentResource {
     }
 
     @PUT
-    @Consumes("application/json")
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response updateArticle(String articleJson) {
         articleDAO.updateArticle(Article.fromJson(articleJson));
         return Response.noContent().build();
@@ -93,7 +98,7 @@ public class ContentResource {
 
     @POST
     @Path("/{id}/comment")
-    @Consumes("application/json")
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response addCommentToArticle(@PathParam("id") Long articleId, String commentJson) {
         Comment comment = Comment.fromJson(commentJson);
         Comment created = articleDAO.addCommentToArticle(comment, articleId);
@@ -102,4 +107,53 @@ public class ContentResource {
                 .build();
     }
 
+    @POST
+    @Path("/{id}/photo")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response addPhotoToArticle(@PathParam("id") Long articleId,
+                                      @Context HttpServletRequest servletRequest) {
+        try {
+            final Part photoPart = servletRequest.getPart("photo");
+            final File localFile = new File(System.getProperty("java.io.tmpdir"), photoPart.getName());
+            try (InputStream in = photoPart.getInputStream()) {
+                Files.copy(in, localFile.toPath());
+            }
+            Photo photo = Photo.fromJson(servletRequest.getParameter("photoData"));
+            photo.setPhotoLocation(localFile);
+            Photo created = articleDAO.addPhotoToArticle(photo, articleId);
+            return Response.created(URI.create("/photo/" + created.getId()))
+                    .entity(photo.toJson())
+                    .build();
+        } catch (IOException | ServletException e) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{id}/photo")
+    public Response getPhotosForArticle(@PathParam("id") Long articleId) {
+        return articleDAO.findArticleById(articleId)
+                .map(Article::getPhotos)
+                .map(photosList -> Response.ok(buildJsonArray(photosList)).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
+    }
+
+
+    @GET
+    @Produces({"image/png", "image/jpg"})
+    @Path("/photo/{id}")
+    public Response getPhoto(@PathParam("id") Long photoId) {
+        return articleDAO.findPhotoById(photoId)
+                .map(Photo::getPhotoLocation)
+                .map(imageFile -> Response.ok(imageFile).header("Content-Disposition", "attachment; filename=\"" + imageFile.getName() + "\"").build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
+    }
+
+
+    private <T extends Jsonable> JsonArray buildJsonArray(List<T> jsonables) {
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        jsonables.forEach(jsonable -> arrayBuilder.add(jsonable.toJson()));
+        return arrayBuilder.build();
+    }
 }
